@@ -96,7 +96,8 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
   /**
    * Alter the results
    */
-  public function postprocessSearchResults(array & $response, SearchApiQuery$query) {
+  public function postprocessSearchResults(array &$response, SearchApiQuery$query) {
+    //@todo Add proximity/distance information to results.
     return;
   }
 }

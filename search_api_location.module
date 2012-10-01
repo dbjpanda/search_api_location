@@ -5,7 +5,8 @@
  * Provides location based search functionality to the Search API.
  */
 
-module_load_include('inc', 'search_api_location', 'search_api_location.elements');
+// @todo Load this only when necessary.
+module_load_include('inc', 'search_api_location', 'includes/search_api_location.elements');
 
 /**
  * Implements hook_search_api_processor_info().
@@ -195,8 +196,6 @@ function search_api_location_search_api_solr_search_results_alter(&$results, $qu
         // @todo: find better way to extract the facets and rewrite them.
         $parts = explode(' ', $facet_query);
         $lower = explode('=', $parts[1]);
-        $upper = round($kort[1]);
-
         $upper = explode('}', $parts[2]);
         $upper = $upper[0];
         $upper = explode('=', $upper);
