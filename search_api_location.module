@@ -37,7 +37,6 @@ function search_api_location_search_api_data_type_info() {
 function search_api_location_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     // Search Api Page search form.
-
     case 'search_api_page_search_form':
       $page_id = $form['form']['id']['#value'];
       $page = search_api_page_load($page_id);
@@ -45,9 +44,12 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
       // Get the location field from the index if it exists.
       if (_search_api_location_get_locationfield($page->index_id)) {
 
-        // Merge hardcoded defaults, admin set defaults, and user input.
-        $spatial = _search_api_location_get_location($form['form']['keys_' . $page_id]['#default_value']);
-        $defaults = array_merge((array)$page->options['spatial'], (array)$spatial, array('edit_mode' => FALSE));
+        // Determine default values by merging dardcoded defaults, 
+        // admin set defaults, and user input.
+        $admin_settings = $page->options['spatial'];
+        $user_input = $form['form']['keys_' . $page_id]['#default_value'];
+        $location = _search_api_location_get_location($admin_settings, $user_input);
+        $defaults = array_merge((array)$admin_settings, (array)$location, array('edit_mode' => FALSE));
 
         // Add spatial form elements.
         $form['form']['spatial_' . $page_id] = search_api_page_get_spatial_element($defaults);
@@ -63,17 +65,16 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
       break;
 
     // Search Api Page 'edit page' form.
-
     case 'search_api_page_admin_edit':
       $page = $form_state['page'];
       if (_search_api_location_get_locationfield($page->index_id)) {
-        $defaults = array_merge($page->options['spatial'], array('edit_mode' => TRUE));
+        $admin_settings = $page->options['spatial'];
+        $defaults = array_merge($admin_settings, array('edit_mode' => TRUE));
         $form['options']['spatial'] = search_api_page_get_spatial_element($defaults);
       }
       break;
 
     // Search Api Page 'add page' form.
-
     case 'search_api_page_admin_add':
       if (isset($form_state['step_one']) && _search_api_location_get_locationfield($form_state['step_one']['index_id'])) {
         $defaults = array('edit_mode' => TRUE);
@@ -89,7 +90,20 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
  * @see search_api_location_search_api_page_search_form_submit()
  */
 function search_api_location_search_api_page_search_form_validate(array$form, array & $form_state) {
-  // @todo Validate the lat, lng and radius value.
+  // @todo Validate the lat, lng.
+  $page_id = $form['form']['id']['#value'];
+  
+  // @todo MAKE THIS WORK!
+  // Validate radius.
+  $radius = $form_state['values']['spatial_' . $page_id]['radius'];
+  $radius_min = $form_state['values']['spatial_' . $page_id]['radius_min'];
+  $radius_max = $form_state['values']['spatial_' . $page_id]['radius_max'];
+  if ($radius > $radius_max) {
+    form_set_error('spatial-radius', t('The radius can be no greater than @radius_max', array('radius_max' => $radius_max)));
+  }
+  elseif ($radius < $radius_min) {
+    form_set_error('spatial-radius', t('The radius can be no less than @radius_min', array('radius_max' => $radius_min)));
+  }
 }
 
 /**
@@ -112,10 +126,10 @@ function search_api_location_search_api_solr_query_alter(array & $call_args, Sea
   if (is_array($spatial)) {
 
     // Recalculate the radius field, because solr can only handle km.
-    if ($spatial['radius_measure'] == "m") {
+    if ($spatial['radius_units'] == "m") {
       $spatial['radius'] /= 1000;
     }
-    elseif ($spatial['radius_measure'] == "mi") {
+    elseif ($spatial['radius_units'] == "mi") {
       $spatial['radius'] *= 1.609344;
     }
 
@@ -189,25 +203,25 @@ function search_api_location_search_api_solr_search_results_alter(&$results, $qu
         $upper = round($upper[1]);
 
         // Recalculate the radius field, because solr can only handle km.
-        if ($spatial['radius_measure'] == 'm') {
+        if ($spatial['radius_units'] == 'm') {
           $lower *= 1000;
           $upper *= 1000;
         }
-        elseif ($spatial['radius_measure'] == 'mi') {
+        elseif ($spatial['radius_units'] == 'mi') {
           $lower /= 1.609344;
           $upper /= 1.609344;
         }
 
         // Do some rounding.
         $precision = 2;
-        if ($spatial['radius_measure'] == 'm') {
+        if ($spatial['radius_units'] == 'm') {
           // Only use full numbers if unit is metres.
           $precision = 0;
         }
         $lower = round($lower, $precision);
         $upper = round($upper, $precision);
 
-        $results['search_api_facets'][$locationfield][] = array("filter" => '"' . $lower . ' ' . $spatial['radius_measure'] . ' to ' . $upper . ' ' . $spatial['radius_measure'] . '"', "count" => $count);
+        $results['search_api_facets'][$locationfield][] = array("filter" => '"' . $lower . ' ' . $spatial['radius_units'] . ' to ' . $upper . ' ' . $spatial['radius_units'] . '"', "count" => $count);
       }
     }
   }
@@ -246,19 +260,20 @@ function _search_api_location_get_locationfield($index_id) {
  * @return array
  *   an array of the location details
  */
-function _search_api_location_get_location($keys) {
-
+function _search_api_location_get_location($settings, $keys = '') {
   $location = array();
 
+  // Geocode from address string.
   if (is_array($keys)) {
     $keys = reset($keys);
   }
 
   $parsed_keys = drupal_parse_url($keys);
 
-  // Geocode address if it is set.
+  // We always attempt to geocode an address string if it is given.
   if (isset($parsed_keys['query']['address'])) {
     $address             = $parsed_keys['query']['address'];
+    // @todo support all geocoder compatible geocoding methods, not just google.
     $response            = geocoder('google', $address);
     $location['lat']     = $response->coords[1];
     $location['lng']     = $response->coords[0];
@@ -266,6 +281,42 @@ function _search_api_location_get_location($keys) {
     $location['radius']  = $parsed_keys['query']['radius'];
 
     return $location;
+  }
+  // Otherwise, we fallback to a default. Check to see if we should default
+  // to user location. If not, default address string will be used.
+  elseif ($settings['default_location_type'] == 'user_geofield') {
+    global $user;
+    global $language;
+    // The global user object does not contain all fields, so we load.
+    $account = user_load($user->uid);
+    $geofield = $account->$settings['user_geofield'];
+    
+    // @todo support multiple languages or multivalued geofields?
+    // Grab first language array.
+    $geofield = reset($geofield);
+    // Grab first delta array.
+    $geofield = reset($geofield);
+
+    // @todo support other geo_types.
+    if ($geofield['geo_type'] == 'point') {
+      // Set location info.
+      $location['lat']     = $geofield['lat'];
+      $location['lng']     = $geofield['lon'];
+      $location['radius']  = $settings['radius'];
+      if (isset($settings['user_addressfield'])) {
+        $addressfield = $account->$settings['user_addressfield'];
+        // Grab first language array.
+        $addressfield = reset($addressfield);
+        // Grab first delta array.
+        $addressfield = reset($addressfield);
+        $location['address'] = theme('search_api_location_addressfield_city_state', $addressfield);
+      }
+      else {
+        $location['address'] = $location['lat'] . ',' . $location['lng'];
+      }
+
+      return $location;
+    }
   }
 
   return FALSE;
@@ -290,3 +341,45 @@ function _search_api_location_get_keys($keys) {
   return urldecode($parts[0]);
 }
 
+/**
+ * Find all geofields for all entity types and bundles.
+ *
+ * @todo Run this function on install and when new fields are added (for all entity types and bundles),
+ * then cache info in a variable for faster retrieval.
+ */
+function _search_api_location_get_user_fields($field_type = 'geofield') {
+  $geofields = array();
+  $instances = field_info_instances('user', 'user');
+
+  foreach ($instances as $field_name => $field) {
+    $real_field = field_info_field($field['field_name']);
+    if ($real_field['type'] == $field_type) {
+      $geofields[$field_name] = $field['label'];
+    }
+  }
+
+  return $geofields;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function search_api_location_theme() {
+  return array(
+    'search_api_location_addressfield_city_state' => array(
+      'variables' => array('element' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme addressfield output for search api address string field.
+ */
+function theme_search_api_location_addressfield_city_state($addressfield) {
+  $output = $addressfield['administrative_area'];
+  // Prepend city if it is set. This way, we avoid an unnecessary comma.
+  if (strlen($addressfield['locality'])) {
+    $output = $addressfield['locality'] . ', ' . $output;
+  }
+  return $output;
+}

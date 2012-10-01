@@ -6,6 +6,7 @@ core = 7.x
 dependencies[] = search_api
 dependencies[] = search_api_solr
 dependencies[] = geocoder
+dependencies[] = geofield
 
 files[] = includes/processor_location.inc
 files[] = views/handler_filter_location.inc
