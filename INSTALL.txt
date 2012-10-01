@@ -1,0 +1,26 @@
+--------------------------------------------------------------------------------
+                              Search API Location
+--------------------------------------------------------------------------------
+
+Setting up your Solr server
+--------------------------------------------------------------------------------
+ - Update the schema.xml of solr with the version from the module
+ - Update the solrconfig.xml of solr with the version from the module
+ 
+
+Setting up your Solr index
+--------------------------------------------------------------------------------
+ - Put the module in sites/all/modules folder.
+ - Apply search_api_solr-compatibility-with-search_api_spatial.patch to the search_api_solr module.
+ - Enable Search API Location
+ - Add/modify a Search API index with Solr as server type
+ - On the 'fields' tab: check the field containing the lat/lng value and select the 'latitude/longitude' type.
+   If you don't see the field, check the 'add related field' 
+ - At the bottom of the page on the 'workflow' tab, enable the spatial search processor and select the field it has to run on
+ - Reindex the index
+
+
+Setting up your Search API Page
+--------------------------------------------------------------------------------
+ - Add a new search page and select the index with the enabled spatial search processor
+ - Select the default settings (default point, min/max radius, stepping and unit of measurement).

@@ -1,0 +1,9 @@
+name = Search API location views
+description = Adds Views integration for the Search API Location module
+package = Search
+core = 7.x
+
+dependencies[] = search_api_views
+dependencies[] = search_api_location
+
+files[] = views_handler_filter_solr_location.inc
