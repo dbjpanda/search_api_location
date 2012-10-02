@@ -56,8 +56,8 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
         $form['form']['spatial_' . $page_id] = search_api_page_get_spatial_element($defaults);
 
         // Set default value for keywords field.
-        $keys = _search_api_location_get_keys($form['form']['keys_' . $page_id]['#default_value']);
-        $form['form']['keys_' . $page_id]['#default_value'] = $keys;
+        //$keys = _search_api_location_get_keys($form['form']['keys_' . $page_id]['#default_value']);
+        //$form['form']['keys_' . $page_id]['#default_value'] = $keys;
 
         // Override the validate function to permit empty key value.
         $form['#validate'] = array("search_api_location_search_api_page_search_form_validate");
@@ -68,6 +68,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
     // Search Api Page 'edit page' form.
     case 'search_api_page_admin_edit':
       $page = $form_state['page'];
+      // If a location field exists.
       if (_search_api_location_get_locationfield($page->index_id)) {
         $admin_settings = $page->options['spatial'];
         $defaults = array_merge($admin_settings, array('edit_mode' => TRUE));
@@ -115,7 +116,10 @@ function search_api_location_search_api_page_search_form_validate(array$form, ar
 function search_api_location_search_api_page_search_form_submit(array$form, array & $form_state) {
   $page_id = $form_state['values']['id'];
   $spatial = $form_state['values']['spatial_' . $page_id];
-  $form_state['redirect'] = url($form_state['redirect'], array('query' => $spatial));
+  unset($spatial['radius_min']);
+  unset($spatial['radius_max']);
+  $form_state['redirect'] = array($form_state['redirect'], array('query' => $spatial));
+
 }
 
 /**
@@ -259,26 +263,24 @@ function _search_api_location_get_locationfield($index_id) {
  * @return array
  *   an array of the location details
  */
-function _search_api_location_get_location($settings, $keys = '') {
+function _search_api_location_get_location($settings = array()) {
   $location = array();
-
-  // Geocode from address string.
-  if (is_array($keys)) {
-    $keys = reset($keys);
-  }
-
-  $parsed_keys = drupal_parse_url($keys);
+  $params = drupal_get_query_parameters();
 
   // We always attempt to geocode an address string if it is given.
-  if (isset($parsed_keys['query']['address'])) {
-    $address             = $parsed_keys['query']['address'];
+  if (isset($params['address'])) {
+    $address             = $params['address'];
     // @todo support all geocoder compatible geocoding methods, not just google.
-    $response            = geocoder('google', $address);
-    $location['lat']     = $response->coords[1];
-    $location['lng']     = $response->coords[0];
-    $location['address'] = $response->data['geocoder_formatted_address'];
-    $location['radius']  = $parsed_keys['query']['radius'];
-
+    if ($response = geocoder('google', $address)) {
+      $location['lat']     = $response->coords[1];
+      $location['lng']     = $response->coords[0];
+      $location['address'] = $response->data['geocoder_formatted_address'];
+      $location['radius']  = $params['radius'];
+    }
+    else {
+      $location['address'] = $address;
+      drupal_set_message(t("We're sorry, we cannot find the address <i>@address</i> that you entered.", array('@address' => $address)), 'warning', FALSE);
+    }
     return $location;
   }
   // Otherwise, we fallback to a default. Check to see if we should default
@@ -288,56 +290,37 @@ function _search_api_location_get_location($settings, $keys = '') {
     global $language;
     // The global user object does not contain all fields, so we load.
     $account = user_load($user->uid);
-    $geofield = $account->$settings['user_geofield'];
-    
-    // @todo support multiple languages or multivalued geofields?
-    // Grab first language array.
-    $geofield = reset($geofield);
-    // Grab first delta array.
-    $geofield = reset($geofield);
+    if ($geofield = $account->$settings['user_geofield']) {
+      // @todo support multiple languages or multivalued geofields?
+      // Grab first language array.
+      $geofield = reset($geofield);
+      // Grab first delta array.
+      $geofield = reset($geofield);
 
-    // @todo support other geo_types.
-    if ($geofield['geo_type'] == 'point') {
-      // Set location info.
-      $location['lat']     = $geofield['lat'];
-      $location['lng']     = $geofield['lon'];
-      $location['radius']  = $settings['radius'];
-      if (isset($settings['user_addressfield'])) {
-        $addressfield = $account->$settings['user_addressfield'];
-        // Grab first language array.
-        $addressfield = reset($addressfield);
-        // Grab first delta array.
-        $addressfield = reset($addressfield);
-        $location['address'] = theme('search_api_location_addressfield_city_state', $addressfield);
-      }
-      else {
-        $location['address'] = $location['lat'] . ',' . $location['lng'];
-      }
+      // @todo support other geo_types.
+      if ($geofield['geo_type'] == 'point') {
+        // Set location info.
+        $location['lat']     = $geofield['lat'];
+        $location['lng']     = $geofield['lon'];
+        $location['radius']  = $settings['radius'];
+        if (isset($settings['user_addressfield'])) {
+          $addressfield = $account->$settings['user_addressfield'];
+          // Grab first language array.
+          $addressfield = reset($addressfield);
+          // Grab first delta array.
+          $addressfield = reset($addressfield);
+          $location['address'] = theme('search_api_location_addressfield_city_state', $addressfield);
+        }
+        else {
+          $location['address'] = $location['lat'] . ',' . $location['lng'];
+        }
 
-      return $location;
+        return $location;
+      }
     }
   }
 
   return FALSE;
-}
-
-/**
- * Returns the keys part of the search keys
- *
- * @param string $keys
- *   The keys of the search page.
- *
- * @return string
- *   an string with the search keys without the location part.
- */
-function _search_api_location_get_keys($keys) {
-  if (is_array($keys)) {
-    $keys = reset($keys);
-  }
-
-  $parts = explode("?radius=", $keys);
-
-  return urldecode($parts[0]);
 }
 
 /**

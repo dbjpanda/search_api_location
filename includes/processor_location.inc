@@ -68,11 +68,9 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
     $locationfield = _search_api_location_get_locationfield($query->getIndex()->id);
     $search_id = explode(':', $query->getOption('search id'));
     if ($locationfield && $search_id[0] == "search_api_page") {
-      // Parse location information from keys.
-      $keys             = $query->getKeys();
       //@todo pass return values from search_api_location_get_location() back to 
       // search form so that it doesn't need to be called again via hook_form_alter().
-      $spatial          = _search_api_location_get_location(array(), $keys);
+      $spatial          = _search_api_location_get_location();
       $spatial['field'] = $locationfield;
 
       $entity_query = new EntityFieldQuery();
@@ -86,7 +84,6 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
       $spatial['radius_units'] = $page->options['spatial']['radius_units'];
 
       $query->setOption('spatial', $spatial);
-      $query->keys(_search_api_location_get_keys($keys));
     }
     elseif ($locationfield && $search_id[0] == "search_api_views") {
       // Everything happens in the location filter.
