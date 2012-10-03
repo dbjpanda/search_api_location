@@ -49,7 +49,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
         // admin set defaults, and user input.
         $admin_settings = $page->options['spatial'];
         $user_input = $form['form']['keys_' . $page_id]['#default_value'];
-        $location = _search_api_location_get_location($admin_settings, $user_input);
+        $location = _search_api_location_get_location($admin_settings);
         $defaults = array_merge((array)$admin_settings, (array)$location, array('edit_mode' => FALSE));
 
         // Add spatial form elements.
@@ -263,14 +263,20 @@ function _search_api_location_get_locationfield($index_id) {
  * @return array
  *   an array of the location details
  */
-function _search_api_location_get_location($settings = array()) {
+function _search_api_location_get_location($settings = array(), $params = array()) {
   $location = array();
-  $params = drupal_get_query_parameters();
+
+  // If parameters have not been explicitly passed, check $_REQUEST.
+  if (!$params) {
+    $params = drupal_get_query_parameters();
+  }
 
   // We always attempt to geocode an address string if it is given.
   if (isset($params['address'])) {
     $address             = $params['address'];
-    // @todo support all geocoder compatible geocoding methods, not just google.
+    // @todo Support all geocoder compatible geocoding methods, not just google.
+    // @todo Look into caching this reponse. Geocoder may already do this, but
+    // we don't want to re-geocode addresses that have been searched already.
     if ($response = geocoder('google', $address)) {
       $location['lat']     = $response->coords[1];
       $location['lng']     = $response->coords[0];
@@ -364,4 +370,20 @@ function theme_search_api_location_addressfield_city_state($addressfield) {
     $output = $addressfield['locality'] . ', ' . $output;
   }
   return $output;
+}
+
+/**
+ * Lets modules alter the search keys that are returned to FacetAPI and used
+ * in the current search block and breadcrumb trail.
+ *
+ * @param string $keys
+ *   The string representing the user's current search query.
+ * @param SearchApiQuery $query
+ *   The SearchApiQuery object for the current search.
+ */
+function search_api_location_search_api_facetapi_keys_alter(&$keys, $query) {
+  if ($spatial = $query->getOption('spatial')) {
+    $item = menu_get_item();
+    $search_api_base_path = $item['href'];
+  }  
 }
