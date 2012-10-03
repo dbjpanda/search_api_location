@@ -40,10 +40,17 @@ function search_api_location_element_process($element, $form_state, $complete_fo
     'mi' => 'miles',
   );
 
+  // Determine element parents. This is used to correctly set #states arrays.
+  if ($form_id['#value'] == 'search_api_page_admin_edit') {
+    $element_parents = 'options[spatial]';
+  }
+  else {
+    $element_parents = 'spatial';
+  }
+
   $element['radius'] = array(
     '#type' => !empty($defaults['edit_mode']) || $defaults['radius_display'] ? 'textfield' : 'hidden',
     '#title' => $settings['edit_mode'] ? t('Default radius') : NULL,
-    '#name' => 'spatial-radius',
     '#field_prefix' => t('Within'),
     '#size' => 3,
     '#default_value' => $defaults['radius'],
@@ -93,7 +100,7 @@ function search_api_location_element_process($element, $form_state, $complete_fo
       '#default_value' => $defaults['user_geofield'],
       '#states' => array(
         'visible' => array(
-         ':input[name="options[spatial][default_location_type]"]' => array('value' => 'user_geofield'),
+         ':input[name="' . $element_parents . '[default_location_type]"]' => array('value' => 'user_geofield'),
         ),
       ),
     );
@@ -106,7 +113,7 @@ function search_api_location_element_process($element, $form_state, $complete_fo
         '#default_value' => $defaults['user_addressfield'],
         '#states' => array(
           'visible' => array(
-           ':input[name="options[spatial][default_location_type]"]' => array('value' => 'user_geofield'),
+           ':input[name="' . $element_parents . '[default_location_type]"]' => array('value' => 'user_geofield'),
           ),
         ),
       );
@@ -127,7 +134,7 @@ function search_api_location_element_process($element, $form_state, $complete_fo
     '#required' => $defaults['address_display'],
     '#states' => array(
       'visible' => array(
-       ':input[name="options[spatial][default_location_type]"]' => array('value' => 'string'),
+       ':input[name="' . $element_parents . '[default_location_type]"]' => array('value' => 'string'),
       ),
     ),
   );

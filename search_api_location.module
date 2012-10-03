@@ -55,10 +55,6 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
         // Add spatial form elements.
         $form['form']['spatial_' . $page_id] = search_api_page_get_spatial_element($defaults);
 
-        // Set default value for keywords field.
-        //$keys = _search_api_location_get_keys($form['form']['keys_' . $page_id]['#default_value']);
-        //$form['form']['keys_' . $page_id]['#default_value'] = $keys;
-
         // Override the validate function to permit empty key value.
         $form['#validate'] = array("search_api_location_search_api_page_search_form_validate");
         $form['#submit'][] = "search_api_location_search_api_page_search_form_submit";
@@ -81,6 +77,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
       if (isset($form_state['step_one']) && _search_api_location_get_locationfield($form_state['step_one']['index_id'])) {
         $defaults = array('edit_mode' => TRUE);
         $form['spatial'] = search_api_page_get_spatial_element($defaults);
+        $form['submit']['#weight'] = 1000;
       }
       break;
   }
@@ -119,7 +116,6 @@ function search_api_location_search_api_page_search_form_submit(array$form, arra
   unset($spatial['radius_min']);
   unset($spatial['radius_max']);
   $form_state['redirect'] = array($form_state['redirect'], array('query' => $spatial));
-
 }
 
 /**
