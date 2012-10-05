@@ -124,8 +124,7 @@ function search_api_location_search_api_page_search_form_submit(array$form, arra
 function search_api_location_search_api_solr_query_alter(array & $call_args, SearchApiQueryInterface & $query) {
   $spatial = $query->getOption('spatial');
 
-  if (is_array($spatial)) {
-
+  if (isset($spatial['lat']) && isset($spatial['lng'])) {
     // Recalculate the radius field, because solr can only handle km.
     if ($spatial['radius_units'] == "m") {
       $spatial['radius'] /= 1000;
@@ -287,7 +286,7 @@ function _search_api_location_get_location($settings = array(), $params = array(
   }
   // Otherwise, we fallback to a default. Check to see if we should default
   // to user location. If not, default address string will be used.
-  elseif ($settings['default_location_type'] == 'user_geofield') {
+  elseif ($settings && $settings['default_location_type'] == 'user_geofield') {
     global $user;
     global $language;
     // The global user object does not contain all fields, so we load.
@@ -381,5 +380,34 @@ function search_api_location_search_api_facetapi_keys_alter(&$keys, $query) {
   if ($spatial = $query->getOption('spatial')) {
     $item = menu_get_item();
     $search_api_base_path = $item['href'];
-  }  
+  }
+}
+
+/**
+ * Uses Spherical Law of Cosines to calculate distance.
+ */
+function search_api_location_distance_slc($lat_a, $lon_a, $lat_b, $lon_b) {
+  // Radius measured in kilometers.
+  $earth_radius = 6372.795477598;
+  
+  // Radius measured in miles.
+  // $earth_radius = 3963.1676 ;
+
+  $delta_lat = $lat_b - $lat_a ;
+  $delta_lon = $lon_b - $lon_a ;
+
+  $alpha = deg2rad($delta_lat/2);
+  $beta = deg2rad($delta_lon/2);
+  
+  $earth_radius = 6372.795477598;
+
+  $a        = sin($alpha) * sin($alpha) + cos(deg2rad($lat_1)) * cos(deg2rad($lat_2)) * sin($beta) * sin($beta) ;
+  $c        = asin(min(1, sqrt($a)));
+  $distance = 2 * $earth_radius * $c;
+  $distance = round($distance, 4);
+
+  // miles would be
+  // ($km * 0.621371192)
+
+  return $distance;
 }

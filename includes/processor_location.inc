@@ -72,6 +72,9 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
       // search form so that it doesn't need to be called again via hook_form_alter().
       $spatial          = _search_api_location_get_location();
       $spatial['field'] = $locationfield;
+      
+      //$fields = $query->getFields();
+
 
       $entity_query = new EntityFieldQuery();
       $result = $entity_query->entityCondition('entity_type', 'search_api_page')->propertyCondition('path', $search_id[1])->execute();
@@ -94,7 +97,15 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
    * Alter the results
    */
   public function postprocessSearchResults(array &$response, SearchApiQuery$query) {
+    //dsm($response);
     //@todo Add proximity/distance information to results.
+    /*
+    if ($spatial = $query->getOption('spatial')) {
+      // @todo Need to be able to access lat & lon of result rows!
+      $distance = search_api_location_distance_slc($spatial['lat'], $spatial['lng'], $lat_b, $lon_b)
+    }
+    */
+    
     return;
   }
 }
