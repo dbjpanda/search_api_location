@@ -9,7 +9,7 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
   /**
    * Constructor
    */
-  public function __construct(SearchApiIndex$index, array$options = array()) {
+  public function __construct(SearchApiIndex $index, array $options = array()) {
     parent::__construct($index, $options);
     $this->options += array(
       'location_searchtype' => 1,
@@ -19,7 +19,7 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
   /**
    * Check if one of the fields in the index supports location based search
    */
-  public function supportsIndex(SearchApiIndex$index) {
+  public function supportsIndex(SearchApiIndex $index) {
 
     foreach ($index->options['fields'] as $key => $value) {
       if (isset($value['real_type']) && $value['real_type'] == 'location') {
@@ -63,16 +63,16 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
   /**
    * Adds the location based search info to the query object
    */
-  public function preprocessSearchQuery(SearchApiQuery$query) {
+  public function preprocessSearchQuery(SearchApiQuery $query) {
 
     $locationfield = _search_api_location_get_locationfield($query->getIndex()->id);
     $search_id = explode(':', $query->getOption('search id'));
     if ($locationfield && $search_id[0] == "search_api_page") {
-      //@todo pass return values from search_api_location_get_location() back to 
+      //@todo pass return values from search_api_location_get_location() back to
       // search form so that it doesn't need to be called again via hook_form_alter().
       $spatial          = _search_api_location_get_location();
       $spatial['field'] = $locationfield;
-      
+
       //$fields = $query->getFields();
 
 
@@ -86,7 +86,7 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
       // Add the measure, so we can recalculate the radius value if necessery.
       $spatial['radius_units'] = $page->options['spatial']['radius_units'];
 
-      $query->setOption('spatial', $spatial);
+      $query->setOption('search_api_location', $spatial);
     }
     elseif ($locationfield && $search_id[0] == "search_api_views") {
       // Everything happens in the location filter.
@@ -96,16 +96,16 @@ class SearchApiLocation extends SearchApiAbstractProcessor {
   /**
    * Alter the results
    */
-  public function postprocessSearchResults(array &$response, SearchApiQuery$query) {
+  public function postprocessSearchResults(array &$response, SearchApiQuery $query) {
     //dsm($response);
     //@todo Add proximity/distance information to results.
     /*
-    if ($spatial = $query->getOption('spatial')) {
+    if ($spatial = $query->getOption('search_api_location')) {
       // @todo Need to be able to access lat & lon of result rows!
       $distance = search_api_location_distance_slc($spatial['lat'], $spatial['lng'], $lat_b, $lon_b)
     }
     */
-    
+
     return;
   }
 }

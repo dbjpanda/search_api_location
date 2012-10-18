@@ -45,7 +45,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
       // Get the location field from the index if it exists.
       if (_search_api_location_get_locationfield($page->index_id)) {
 
-        // Determine default values by merging dardcoded defaults, 
+        // Determine default values by merging hardcoded defaults,
         // admin set defaults, and user input.
         $admin_settings = $page->options['spatial'];
         $user_input = $form['form']['keys_' . $page_id]['#default_value'];
@@ -91,7 +91,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
 function search_api_location_search_api_page_search_form_validate(array$form, array & $form_state) {
   // @todo Validate the lat, lng.
   $page_id = $form['form']['id']['#value'];
-  
+
   // @todo MAKE THIS WORK!
   // Validate radius.
   $radius = $form_state['values']['spatial_' . $page_id]['radius'];
@@ -122,7 +122,7 @@ function search_api_location_search_api_page_search_form_submit(array$form, arra
  * Implements hook_search_api_solr_query_alter().
  */
 function search_api_location_search_api_solr_query_alter(array & $call_args, SearchApiQueryInterface & $query) {
-  $spatial = $query->getOption('spatial');
+  $spatial = $query->getOption('search_api_location');
 
   if (isset($spatial['lat']) && isset($spatial['lng'])) {
     // Recalculate the radius field, because solr can only handle km.
@@ -182,7 +182,7 @@ function search_api_location_search_api_solr_query_alter(array & $call_args, Sea
 function search_api_location_search_api_solr_search_results_alter(&$results, $query, $response) {
 
   $locationfield = _search_api_location_get_locationfield($query->getIndex()->id);
-  $spatial = $query->getOption('spatial');
+  $spatial = $query->getOption('search_api_location');
 
   if (isset($locationfield) && $spatial) {
 
@@ -377,7 +377,7 @@ function theme_search_api_location_addressfield_city_state($addressfield) {
  *   The SearchApiQuery object for the current search.
  */
 function search_api_location_search_api_facetapi_keys_alter(&$keys, $query) {
-  if ($spatial = $query->getOption('spatial')) {
+  if ($spatial = $query->getOption('search_api_location')) {
     $item = menu_get_item();
     $search_api_base_path = $item['href'];
   }
@@ -389,7 +389,7 @@ function search_api_location_search_api_facetapi_keys_alter(&$keys, $query) {
 function search_api_location_distance_slc($lat_a, $lon_a, $lat_b, $lon_b) {
   // Radius measured in kilometers.
   $earth_radius = 6372.795477598;
-  
+
   // Radius measured in miles.
   // $earth_radius = 3963.1676 ;
 
@@ -398,7 +398,7 @@ function search_api_location_distance_slc($lat_a, $lon_a, $lat_b, $lon_b) {
 
   $alpha = deg2rad($delta_lat/2);
   $beta = deg2rad($delta_lon/2);
-  
+
   $earth_radius = 6372.795477598;
 
   $a        = sin($alpha) * sin($alpha) + cos(deg2rad($lat_1)) * cos(deg2rad($lat_2)) * sin($beta) * sin($beta) ;
