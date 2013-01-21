@@ -88,7 +88,7 @@ function search_api_location_form_alter(&$form, &$form_state, $form_id) {
  *
  * @see search_api_location_search_api_page_search_form_submit()
  */
-function search_api_location_search_api_page_search_form_validate(array$form, array & $form_state) {
+function search_api_location_search_api_page_search_form_validate(array $form, array &$form_state) {
   // @todo Validate the lat, lng.
   $page_id = $form['form']['id']['#value'];
 
@@ -110,7 +110,7 @@ function search_api_location_search_api_page_search_form_validate(array$form, ar
  *
  * @see search_api_location_search_api_page_search_form_validate()
  */
-function search_api_location_search_api_page_search_form_submit(array$form, array & $form_state) {
+function search_api_location_search_api_page_search_form_submit(array $form, array &$form_state) {
   $page_id = $form_state['values']['id'];
   $spatial = $form_state['values']['spatial_' . $page_id];
   unset($spatial['radius_min']);
@@ -121,7 +121,7 @@ function search_api_location_search_api_page_search_form_submit(array$form, arra
 /**
  * Implements hook_search_api_solr_query_alter().
  */
-function search_api_location_search_api_solr_query_alter(array & $call_args, SearchApiQueryInterface & $query) {
+function search_api_location_search_api_solr_query_alter(array &$call_args, SearchApiQueryInterface &$query) {
   $spatial = $query->getOption('search_api_location');
 
   if (isset($spatial['lat']) && isset($spatial['lng'])) {
