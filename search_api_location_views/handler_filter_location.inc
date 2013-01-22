@@ -19,8 +19,8 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
     if (isset($form_state['input']['options']['spatial'])) {
       //$default_value['radius'] = $form_state['input']['options']['spatial']['radius'];
       $this->options['radius'] = $form_state['input']['options']['spatial']['radius'];
+      $this->options['address'] = $form_state['input']['options']['spatial']['address'];
       $default_value['lng'] = $form_state['input'][$field]['lng'];
-      // $default_value['radius'] = $form_state['input'][$field]['radius'];
     }
     else {
       $default_value['lat'] = $this->options['lat'];
@@ -36,6 +36,7 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
     $default_value['edit_mode'] = FALSE;
     $default_value['radius_units_display'] = FALSE;
     $default_value['address'] = $this->options['address'];
+    $default_value['address_required'] = FALSE;
 
     $form['value'] = array(
       '#type' => 'search_api_location_pick',
@@ -58,7 +59,7 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
     $options['radius_min'] = array('default' => '5');
     $options['radius_max'] = array('default' => '100');
     $options['radius_units'] = array('default' => 'km');
-    $options['address'] = array('default' => 'Washington, DC');
+    $options['address'] = array('default' => 'London, England');
 
     return $options;
   }
@@ -109,7 +110,7 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
 
     $field = str_replace(":", "_", $this->real_field);
 
-    if (isset($this->view->exposed_raw_input[$field]['radius'])) {
+    if (isset($this->view->exposed_raw_input[$field]['radius']) && isset($this->view->exposed_data['address'])) {
 
       $address = $this->view->exposed_data['address'];
       $response = geocoder('google', $address);

@@ -131,7 +131,7 @@ function search_api_location_element_process($element, $form_state, $complete_fo
     '#attributes' => array(
       'id' => $id . '-address',
     ),
-    '#required' => $defaults['address_display'],
+    '#required' => $defaults['address_required'],
     '#states' => array(
       'visible' => array(
        ':input[name="' . $element_parents . '[default_location_type]"]' => array('value' => 'string'),

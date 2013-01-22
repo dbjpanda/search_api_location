@@ -9,4 +9,3 @@ dependencies[] = geocoder
 dependencies[] = geofield
 
 files[] = includes/processor_location.inc
-files[] = views/handler_filter_location.inc
