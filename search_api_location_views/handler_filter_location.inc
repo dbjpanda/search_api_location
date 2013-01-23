@@ -8,6 +8,13 @@
 class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
 
   /**
+   * Provide a list of options for the operator form.
+   */
+  public function operator_options() {
+    return array();
+  }
+
+  /**
    * Provide a form for setting the filter value.
    */
   public function value_form(&$form, &$form_state) {
@@ -27,7 +34,6 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
       $default_value['lng'] = $this->options['lng'];
       $default_value['radius'] = $this->options['radius'];
     }
-    error_log(print_r($this->options['radius'],1));
     $default_value['radius_min'] = $this->options['radius_min'];
     $default_value['radius_max'] = $this->options['radius_max'];
     $default_value['radius_units'] = $this->options['radius_units'];
@@ -70,10 +76,10 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
   public function options_form(&$form, &$form_state) {
     parent::options_form($form, $form_state);
 
-    unset($form['operator']);
+    //unset($form['operator']);
     //unset($form['value']);
     //$form['label'] = $form['expose']['label'];
-    unset($form['expose']);
+    //unset($form['expose']);
 
 
 
@@ -87,7 +93,6 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
         'radius_min' => $this->options['radius_min'],
         'radius_max' => $this->options['radius_max'],
         'radius_units' => $this->options['radius_units'],
-        'radius_measure' => $this->options['radius_measure'],
         'address' => $this->options['address'],
         'address_display' => $this->options['address_display'],
         'edit_mode' => TRUE,
@@ -110,7 +115,7 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
 
     $field = str_replace(":", "_", $this->real_field);
 
-    if (isset($this->view->exposed_raw_input[$field]['radius']) && isset($this->view->exposed_data['address'])) {
+    if (isset($this->view->exposed_raw_input[$field]['radius']) && !empty($this->view->exposed_data['address'])) {
 
       $address = $this->view->exposed_data['address'];
       $response = geocoder('google', $address);
@@ -118,7 +123,7 @@ class SearchApiViewsHandlerFilterLocation extends SearchApiViewsHandlerFilter {
       $spatial['lat'] = $response->coords[1];
       $spatial['lng'] = $response->coords[0];     
       $spatial['radius'] = $this->view->exposed_raw_input[$field]['radius'];
-      $spatial['radius_measure'] = $this->options['radius_measure'];
+      $spatial['radius_units'] = $this->options['radius_units'];
       $spatial['field'] = $this->real_field;
       $this->query->setOption('search_api_location', $spatial);
 
